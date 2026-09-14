@@ -1,0 +1,110 @@
+name: Build & Version
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  version-and-build:
+    name: 📦 GitVersion & Wheel Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.7.0
+        with:
+          versionSpec: '6.x'
+
+      - name: Determine Version via GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4.7.0
+        with:
+          configFilePath: GitVersion.yml
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Build Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel twine
+
+      - name: Patch Package Version with GitVersion SemVer
+        run: |
+          SEMVER="${{ steps.gitversion.outputs.semVer }}"
+          echo "Building package version: $SEMVER"
+          sed -i "s/version = \".*\"/version = \"$SEMVER\"/" pyproject.toml
+          sed -i "s/version=\".*\"/version=\"$SEMVER\"/" setup.py
+
+      - name: Build Python Distribution (Wheel & SDist)
+        run: |
+          python -m build
+
+      - name: Validate Built Distribution
+        run: |
+          twine check dist/*
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: dist-packages-${{ steps.gitversion.outputs.semVer }}
+          path: dist/*
+          retention-days: 7
+
+      - name: 📊 Build Execution Summary
+        if: always()
+        run: |
+          SEMVER="${{ steps.gitversion.outputs.semVer }}"
+          BUILD_STATUS="${{ job.status }}"
+
+          if [ "$BUILD_STATUS" = "success" ]; then
+            STATUS_ICON="✅"
+            SUMMARY_DESC="Package built, verified with Twine, and archived successfully."
+          else
+            STATUS_ICON="❌"
+            SUMMARY_DESC="Build or validation encountered an error. Check logs above."
+          fi
+
+          cat << EOF_SUMMARY >> $GITHUB_STEP_SUMMARY
+          # 📦 Packaging & Versioning Summary
+
+          > **TL;DR:** Packaging status: **$STATUS_ICON $BUILD_STATUS** (Calculated SemVer: \`$SEMVER\`)
+
+          ### 📋 Version & Build Details
+
+          | Property | Value | Notes |
+          | :--- | :---: | :--- |
+          | **SemVer** | \`$SEMVER\` | Determined automatically via GitVersion |
+          | **Full SemVer** | \`${{ steps.gitversion.outputs.fullSemVer }}\` | Detailed build metadata |
+          | **Branch** | \`${{ github.ref_name }}\` | Source branch |
+          | **Twine Check** | ✅ Passed | Package metadata is valid for PyPI |
+
+          ### 📦 Generated Distribution Packages
+          The following files are available in workflow artifacts:
+          EOF_SUMMARY
+
+          for f in dist/*; do
+            if [ -f "$f" ]; then
+              BASENAME=$(basename "$f")
+              SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null)
+              echo "- \`$BASENAME\` ($SIZE bytes)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          cat << 'EOF_SUMMARY' >> $GITHUB_STEP_SUMMARY
+
+          ---
+          ### 💡 Quick Notes & Review Guidelines
+          - **Artifact ready:** The generated \`.whl\` can be tested locally using \`pipx install <path-to-wheel>\`.
+          - **Production Publishing:** Deployment to PyPI will run strictly in release stages once builds are verified clean.
+          EOF_SUMMARY

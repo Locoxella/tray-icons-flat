@@ -265,8 +265,10 @@ class RecipeEngine:
         if recipes_dirs is None:
             # Default to built-in recipes/ dir in repo or package
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            pkg_dir = os.path.dirname(os.path.abspath(__file__))
             recipes_dirs = [
                 os.path.join(base_dir, "recipes"),
+                os.path.join(pkg_dir, "recipes"),
                 os.path.expanduser("~/.config/tray-icons-flat/recipes")
             ]
         self.recipes_dirs = recipes_dirs
