@@ -150,46 +150,37 @@ tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png --color "#ffffff
 
 ## <a id="recipes"></a>🧩 Adding New Recipes
 
-Creating support for new applications is simple and modular:
-
-### Interactive CLI Assistant
+Support for new applications is fully modular. You can scaffold a new recipe interactively:
 
 ```bash
 tray-icons-flat add
 ```
 
-### Or add a YAML file manually
+Or manually create a `recipes/<app-id>/recipe.yaml` and drop your flat icon into `recipes/<app-id>/assets/`.
 
-Create a directory under `recipes/<app-id>/` (or in your user config `~/.config/tray-icons-flat/recipes/<app-id>/`) with a `recipe.yaml`:
+Three fixing strategies are supported:
 
-```yaml
-id: myapp
-name: My Cool App
-description: Flat monochrome tray icon for My Cool App
-strategy: icon_theme
-detector:
-  binary: myapp
-  desktop: myapp.desktop
-icons:
-  - name: myapp-tray
-    source: assets/myapp-tray.svg
-```
+- **`icon_theme`**: Standard GTK/Qt/DBus apps querying XDG theme icons (e.g., Camera Controls).
+- **`electron_asar`**: Electron apps bundling icons inside `app.asar` (e.g., Antigravity IDE, Slack, Discord).
+- **`bwrap_wrapper`**: Proprietary binaries with hardcoded system paths using Bubblewrap sandbox redirection without `sudo` (e.g., ASUS ROG).
 
-Drop your icon asset into `recipes/<app-id>/assets/`, and `tray-icons-flat` will immediately recognize it!
+📖 **For full examples, strategy details, and local testing instructions, see the comprehensive [Recipe Authoring & Contribution Guide](RECIPES.md).**
 
 ---
 
 ## <a id="contributing"></a>🤝 Contributing
 
-Contributions of recipes, icon assets, and enhancements are very welcome!
+Contributions of new recipes, icon assets, and code improvements are warmly welcomed!
 
-- See [AGENTS.md](file:///home/locoxella/repos/tray-icons-flat/AGENTS.md) for technical specifications, ASAR serialization guidelines, and development conventions.
-- Make sure that recipes do not include hardcoded system paths or usernames (always use `~` or standard XDG paths).
-- Run unit tests before submitting:
+1. Check out the **[Recipe Authoring Guide](RECIPES.md)** to build and test your recipe.
+2. Read **[AGENTS.md](AGENTS.md)** for developer conventions, non-destructive architecture, and git workflow rules.
+3. Ensure all tests pass:
 
-  ```bash
-  python3 -m unittest discover tests
-  ```
+   ```bash
+   python3 -m unittest discover tests
+   ```
+
+4. Submit your feature branch via a Pull Request to `main`.
 
 ---
 
