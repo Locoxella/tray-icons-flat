@@ -16,6 +16,9 @@ It operates across Linux desktop environments (KDE Plasma, GNOME, XFCE, Cinnamon
    - For file replacements (such as Electron ASAR archives), **always** create a pristine `.stock` backup prior to modifications, enabling seamless reversion with `tray-icons-flat revert`.
 3. **No Secrets or Tokens**:
    - Never commit API keys, personal email addresses, machine IDs, or tokens.
+4. **Strict Pull Request & GitVersion Workflow**:
+   - **Never push directly to `main`**. All modifications, fixes, and features must be submitted via feature/fix branches and Pull Requests.
+   - Merging a PR into `main` triggers automated SemVer calculation via **GitVersion**, compiles wheels, and creates the corresponding release on GitHub and PyPI automatically.
 
 ---
 
