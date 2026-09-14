@@ -9,7 +9,7 @@ import yaml
 import shutil
 import subprocess
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from enum import Enum
 
 from .asar_patcher import AsarPatcher
