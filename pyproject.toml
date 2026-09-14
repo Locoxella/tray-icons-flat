@@ -19,4 +19,7 @@ tray-icons-flat = "tray_icons_flat.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tray_icons_flat*"]
+include = ["tray_icons_flat*", "recipes*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.svg", "*.png"]
