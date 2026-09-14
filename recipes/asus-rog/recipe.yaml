@@ -1,22 +1,20 @@
 id: asus-rog
 name: ASUS ROG Control Center
-description: Replaces colored ROG tray notification icons with flat transparent symbolic icons.
-strategy: icon_theme
+description: Overrides hardcoded ROG tray notification icons with flat transparent symbolic icons.
+strategy: bwrap_wrapper
 detector:
   binary: rog-control-center
   desktop: rog-control-center.desktop
-icons:
-  - name: asus_notif_red
-    source: assets/asus_notif_flat.svg
-  - name: asus_notif_white
-    source: assets/asus_notif_flat.svg
-  - name: asus_notif_blue
-    source: assets/asus_notif_flat.svg
-  - name: asus_notif_green
-    source: assets/asus_notif_flat.svg
-  - name: asus_notif_orange
-    source: assets/asus_notif_flat.svg
-  - name: asus_notif_yellow
-    source: assets/asus_notif_flat.svg
-  - name: rog-control-center
-    source: assets/asus_notif_flat.svg
+target_binary: /usr/bin/rog-control-center
+wrapper_bin: ~/.local/bin/rog-control-center
+desktop_icon: rog-control-center
+desktop_files:
+  - ~/.config/autostart/rog-control-center.desktop
+  - ~/.local/share/applications/rog-control-center.desktop
+binds:
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_red.png: assets/asus_notif_flat.png
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_blue.png: assets/asus_notif_flat.png
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_green.png: assets/asus_notif_flat.png
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_white.png: assets/asus_notif_flat.png
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_orange.png: assets/asus_notif_flat.png
+  /usr/share/icons/hicolor/512x512/apps/asus_notif_yellow.png: assets/asus_notif_flat.png
