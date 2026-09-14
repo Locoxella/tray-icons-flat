@@ -8,8 +8,8 @@
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#how-it-works">How It Works</a> •
-  <a href="#recipes-library">Recipes</a> •
-  <a href="#built-in-converter">Image Converter</a> •
+  <a href="#recipes">Recipes</a> •
+  <a href="#image-converter">Image Converter</a> •
   <a href="#persistence-service">Persistence Service</a> •
   <a href="#contributing">Contributing</a>
 </p>
@@ -22,7 +22,7 @@ Have you ever switched your Linux desktop to a clean dark or light theme, only t
 
 ---
 
-## ✨ Features
+## <a id="features"></a>✨ Features
 
 - 🔍 **Auto-Scan (`scan`)**: Instantly detects installed apps known to have broken or out-of-place tray icons and tells you whether they are currently in stock or fixed state.
 - ⚡ **One-Click Fix (`fix --all`)**: Applies aesthetic fixes across all detected applications in seconds.
@@ -37,7 +37,7 @@ Have you ever switched your Linux desktop to a clean dark or light theme, only t
 
 ---
 
-## 🚀 Quick Start
+## <a id="quick-start"></a>🚀 Quick Start
 
 ### 1. Requirements
 
@@ -88,7 +88,7 @@ tray-icons-flat revert --all
 
 ---
 
-## ⚙️ How It Works
+## <a id="how-it-works"></a>⚙️ How It Works
 
 Different Linux applications display tray icons in different ways. `tray-icons-flat` implements the right non-destructive strategy for each:
 
@@ -107,7 +107,7 @@ flowchart TD
 
 ---
 
-## 🔄 Persistence Service (Keep Icons Fixed Across Updates)
+## <a id="persistence-service"></a>🔄 Persistence Service (Keep Icons Fixed Across Updates)
 
 When software packages update (via `dnf`, `apt`, `pacman`, Flatpak, or internal app updaters), they may overwrite modified files or reset icons. You can enable the automated user-level systemd service:
 
@@ -124,7 +124,7 @@ tray-icons-flat service uninstall
 
 ---
 
-## 🖼️ Built-In Image Converter
+## <a id="image-converter"></a>🖼️ Built-In Image Converter
 
 Got an app that isn't supported yet, or want to make your own custom tray icon? Use the built-in converter to transform any PNG or SVG logo into a flat tray icon:
 
@@ -141,7 +141,7 @@ tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png --color "#ffffff
 
 ---
 
-## 🧩 Adding New Recipes
+## <a id="recipes"></a>🧩 Adding New Recipes
 
 Creating support for new applications is simple and modular:
 
@@ -170,7 +170,7 @@ Drop your icon asset into `recipes/<app-id>/assets/`, and `tray-icons-flat` will
 
 ---
 
-## 🤝 Contributing
+## <a id="contributing"></a>🤝 Contributing
 
 Contributions of recipes, icon assets, and enhancements are very welcome!
 - See [AGENTS.md](file:///home/locoxella/repos/tray-icons-flat/AGENTS.md) for technical specifications, ASAR serialization guidelines, and development conventions.
