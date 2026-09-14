@@ -1,0 +1,11 @@
+id: antigravity
+name: Antigravity IDE
+description: Replaces the opaque white rainbow box in tray with a flat monochrome transparent Antigravity waveform.
+strategy: electron_asar
+detector:
+  path: ~/apps/Antigravity/resources/app.asar
+asar_path: ~/apps/Antigravity/resources/app.asar
+replacements:
+  icon.png: assets/icon_flat.png
+  trayTemplate.png: assets/icon_flat.png
+  trayTemplate@2x.png: assets/icon_flat@2x.png

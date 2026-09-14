@@ -1,0 +1,287 @@
+"""
+Recipe engine to discover, inspect, apply, and revert tray icon fixes.
+"""
+
+import os
+import sys
+import json
+import yaml
+import shutil
+from typing import Dict, List, Optional, Any
+from enum import Enum
+
+from .asar_patcher import AsarPatcher
+from .theme_installer import ThemeInstaller
+
+
+class AppStatus(str, Enum):
+    NOT_INSTALLED = "NOT_INSTALLED"
+    BROKEN = "BROKEN"      # Installed but using default colored/broken tray icon
+    FIXED = "FIXED"        # Installed and patched with flat/monochrome icon
+
+
+class Recipe:
+    """Represents an application tray fix recipe."""
+
+    def __init__(self, recipe_dir: str, config: Dict[str, Any]):
+        self.recipe_dir = recipe_dir
+        self.config = config
+        self.id = config.get("id", os.path.basename(recipe_dir))
+        self.name = config.get("name", self.id)
+        self.description = config.get("description", "")
+        self.strategy = config.get("strategy", "icon_theme")
+        self.detector = config.get("detector", {})
+        self.target_files = config.get("target_files", {})
+        self.icons = config.get("icons", [])
+
+    def resolve_path(self, path_str: str) -> str:
+        """Expands ~ and environment variables, or resolves relative to recipe_dir."""
+        expanded = os.path.expanduser(os.path.expandvars(path_str))
+        if not os.path.isabs(expanded):
+            return os.path.join(self.recipe_dir, expanded)
+        return expanded
+
+    def is_installed(self) -> bool:
+        """Checks if the application is installed on the system."""
+        # Check binary
+        if "binary" in self.detector:
+            if shutil.which(self.detector["binary"]):
+                return True
+
+        # Check path
+        if "path" in self.detector:
+            path = self.resolve_path(self.detector["path"])
+            if os.path.exists(path):
+                return True
+
+        # Check flatpak
+        if "flatpak_id" in self.detector:
+            f_id = self.detector["flatpak_id"]
+            paths = [
+                os.path.expanduser(f"~/.local/share/flatpak/app/{f_id}"),
+                f"/var/lib/flatpak/app/{f_id}"
+            ]
+            if any(os.path.exists(p) for p in paths):
+                return True
+
+        # Check desktop file
+        if "desktop" in self.detector:
+            d_name = self.detector["desktop"]
+            desktop_dirs = [
+                os.path.expanduser("~/.local/share/applications"),
+                "/usr/share/applications"
+            ]
+            for d in desktop_dirs:
+                if os.path.exists(os.path.join(d, d_name)):
+                    return True
+
+        return False
+
+    def get_status(self, state_data: Dict[str, Any]) -> AppStatus:
+        """Determines the current status of the app."""
+        if not self.is_installed():
+            return AppStatus.NOT_INSTALLED
+
+        if self.strategy == "electron_asar":
+            asar_path = self.resolve_path(self.config.get("asar_path", ""))
+            if os.path.exists(asar_path):
+                # Check if .stock backup exists and current differs, or state recorded
+                if AsarPatcher.is_patched(asar_path):
+                    return AppStatus.FIXED
+            return AppStatus.BROKEN
+
+        elif self.strategy == "icon_theme":
+            app_state = state_data.get("apps", {}).get(self.id, {})
+            installed_files = app_state.get("installed_files", [])
+            if installed_files and all(os.path.exists(f) for f in installed_files):
+                return AppStatus.FIXED
+            return AppStatus.BROKEN
+
+        return AppStatus.BROKEN
+
+    def apply(self, state_data: Dict[str, Any]) -> bool:
+        """Applies the fix for this recipe."""
+        if not self.is_installed():
+            return False
+
+        app_state = state_data.setdefault("apps", {}).setdefault(self.id, {})
+
+        if self.strategy == "icon_theme":
+            installed_all: List[str] = []
+            active_themes = ThemeInstaller.get_active_themes()
+
+            for icon_spec in self.icons:
+                name = icon_spec["name"]
+                source_rel = icon_spec.get("source")
+                source_path = self.resolve_path(source_rel)
+                subdirs = icon_spec.get("subdirectories")
+
+                for theme in active_themes:
+                    created = ThemeInstaller.install_icon(
+                        source_path=source_path,
+                        target_name=name,
+                        theme=theme,
+                        subdirectories=subdirs
+                    )
+                    installed_all.extend(created)
+
+            ThemeInstaller.refresh_icon_cache()
+            app_state["installed_files"] = list(dict.fromkeys(installed_all))
+            app_state["status"] = AppStatus.FIXED.value
+            return True
+
+        elif self.strategy == "electron_asar":
+            asar_path = self.resolve_path(self.config.get("asar_path", ""))
+            replacements = {}
+            for target_internal, source_rel in self.config.get("replacements", {}).items():
+                replacements[target_internal] = self.resolve_path(source_rel)
+
+            if replacements and os.path.exists(asar_path):
+                success = AsarPatcher.replace_files(asar_path, replacements)
+                if success:
+                    app_state["asar_path"] = asar_path
+                    app_state["status"] = AppStatus.FIXED.value
+                    return True
+
+        return False
+
+    def revert(self, state_data: Dict[str, Any]) -> bool:
+        """Reverts the fix for this recipe."""
+        app_state = state_data.get("apps", {}).get(self.id, {})
+
+        if self.strategy == "icon_theme":
+            installed_files = app_state.get("installed_files", [])
+            ThemeInstaller.uninstall_files(installed_files)
+            ThemeInstaller.refresh_icon_cache()
+            app_state["installed_files"] = []
+            app_state["status"] = AppStatus.BROKEN.value
+            return True
+
+        elif self.strategy == "electron_asar":
+            asar_path = self.resolve_path(self.config.get("asar_path", ""))
+            if os.path.exists(asar_path):
+                AsarPatcher.restore(asar_path)
+            app_state["status"] = AppStatus.BROKEN.value
+            return True
+
+        return False
+
+
+class RecipeEngine:
+    """Manages the catalog of recipes and persistent state."""
+
+    STATE_PATH = os.path.expanduser("~/.local/share/tray-icons-flat/state.json")
+
+    def __init__(self, recipes_dirs: Optional[List[str]] = None):
+        if recipes_dirs is None:
+            # Default to built-in recipes/ dir in repo or package
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            recipes_dirs = [
+                os.path.join(base_dir, "recipes"),
+                os.path.expanduser("~/.config/tray-icons-flat/recipes")
+            ]
+        self.recipes_dirs = recipes_dirs
+        self.recipes: Dict[str, Recipe] = {}
+        self.load_recipes()
+
+    def load_recipes(self) -> None:
+        """Loads all recipe YAML files found in recipes directories."""
+        self.recipes.clear()
+        for r_dir in self.recipes_dirs:
+            if not os.path.isdir(r_dir):
+                continue
+            for item in os.listdir(r_dir):
+                subpath = os.path.join(r_dir, item)
+                if os.path.isdir(subpath):
+                    # Check for recipe.yaml or <item>.yaml
+                    recipe_file = None
+                    for candidate in ["recipe.yaml", "recipe.yml", f"{item}.yaml", f"{item}.yml"]:
+                        p = os.path.join(subpath, candidate)
+                        if os.path.isfile(p):
+                            recipe_file = p
+                            break
+                    if recipe_file:
+                        with open(recipe_file, "r", encoding="utf-8") as f:
+                            cfg = yaml.safe_load(f) or {}
+                        recipe = Recipe(subpath, cfg)
+                        self.recipes[recipe.id] = recipe
+
+    def load_state(self) -> Dict[str, Any]:
+        """Loads state.json."""
+        if os.path.exists(self.STATE_PATH):
+            try:
+                with open(self.STATE_PATH, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
+
+    def save_state(self, state: Dict[str, Any]) -> None:
+        """Saves state.json."""
+        os.makedirs(os.path.dirname(self.STATE_PATH), exist_ok=True)
+        with open(self.STATE_PATH, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2)
+
+    def scan(self) -> List[Dict[str, Any]]:
+        """Scans all recipes and returns their detection and fix status."""
+        state = self.load_state()
+        results = []
+        for r_id, recipe in self.recipes.items():
+            status = recipe.get_status(state)
+            results.append({
+                "id": recipe.id,
+                "name": recipe.name,
+                "description": recipe.description,
+                "strategy": recipe.strategy,
+                "status": status.value
+            })
+        return results
+
+    def fix(self, app_id: Optional[str] = None) -> List[Tuple[str, bool, str]]:
+        """
+        Applies fixes for a specific app_id or all installed apps.
+        Returns list of (app_id, success, message).
+        """
+        state = self.load_state()
+        results = []
+        targets = [self.recipes[app_id]] if app_id and app_id in self.recipes else list(self.recipes.values())
+
+        for recipe in targets:
+            status = recipe.get_status(state)
+            if status == AppStatus.NOT_INSTALLED:
+                results.append((recipe.id, False, "Application not installed"))
+                continue
+            if status == AppStatus.FIXED:
+                # Still re-apply to ensure icons and caches are fresh
+                pass
+
+            try:
+                ok = recipe.apply(state)
+                if ok:
+                    results.append((recipe.id, True, "Successfully applied flat icon fix"))
+                else:
+                    results.append((recipe.id, False, "Failed to apply fix"))
+            except Exception as e:
+                results.append((recipe.id, False, str(e)))
+
+        self.save_state(state)
+        return results
+
+    def revert(self, app_id: Optional[str] = None) -> List[Tuple[str, bool, str]]:
+        """Reverts fixes for a specific app_id or all apps."""
+        state = self.load_state()
+        results = []
+        targets = [self.recipes[app_id]] if app_id and app_id in self.recipes else list(self.recipes.values())
+
+        for recipe in targets:
+            try:
+                ok = recipe.revert(state)
+                if ok:
+                    results.append((recipe.id, True, "Successfully reverted to stock icon"))
+                else:
+                    results.append((recipe.id, False, "Failed to revert fix"))
+            except Exception as e:
+                results.append((recipe.id, False, str(e)))
+
+        self.save_state(state)
+        return results

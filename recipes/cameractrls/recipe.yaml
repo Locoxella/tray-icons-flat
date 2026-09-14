@@ -1,0 +1,10 @@
+id: cameractrls
+name: Camera Controls
+description: Replaces the dark square lens icon with a clean transparent monochrome camera aperture.
+strategy: icon_theme
+detector:
+  flatpak_id: hu.irl.cameractrls
+  desktop: hu.irl.cameractrls.desktop
+icons:
+  - name: hu.irl.cameractrls
+    source: assets/hu.irl.cameractrls.svg

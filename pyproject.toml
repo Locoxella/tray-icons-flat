@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tray-icons-flat"
+version = "1.0.0"
+description = "Universal Linux tool to detect, adapt, and fix broken system tray icons"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "Pillow",
+    "numpy",
+    "pyyaml",
+]
+
+[project.scripts]
+tray-icons-flat = "tray_icons_flat.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tray_icons_flat*"]

@@ -1,0 +1,22 @@
+id: asus-rog
+name: ASUS ROG Control Center
+description: Replaces colored ROG tray notification icons with flat transparent symbolic icons.
+strategy: icon_theme
+detector:
+  binary: rog-control-center
+  desktop: rog-control-center.desktop
+icons:
+  - name: asus_notif_red
+    source: assets/asus_notif_flat.svg
+  - name: asus_notif_white
+    source: assets/asus_notif_flat.svg
+  - name: asus_notif_blue
+    source: assets/asus_notif_flat.svg
+  - name: asus_notif_green
+    source: assets/asus_notif_flat.svg
+  - name: asus_notif_orange
+    source: assets/asus_notif_flat.svg
+  - name: asus_notif_yellow
+    source: assets/asus_notif_flat.svg
+  - name: rog-control-center
+    source: assets/asus_notif_flat.svg

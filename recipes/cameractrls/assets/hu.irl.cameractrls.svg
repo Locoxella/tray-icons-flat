@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22" version="1.1">
+  <defs>
+    <style id="current-color-scheme" type="text/css">
+      .ColorScheme-Text { color:#dfdfdf; }
+      .ColorScheme-Highlight { color:#3daee9; }
+      .ColorScheme-NeutralText { color:#f67400; }
+      .ColorScheme-PositiveText { color:#27ae60; }
+      .ColorScheme-NegativeText { color:#da4453; }
+    </style>
+  </defs>
+  <!-- Clean symbolic camera lens / aperture with transparent background -->
+  <g id="camera-aperture" transform="translate(1, 1)">
+    <!-- Outer lens ring -->
+    <circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" class="ColorScheme-Text" stroke-width="1.6"/>
+    <!-- Aperture blades -->
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 10 3 A 7 7 0 0 0 4.2 6.5 L 9.5 9.5 L 10 3 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 15.8 6.5 A 7 7 0 0 0 10 3 L 10.5 9 L 15.8 6.5 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 17 10 A 7 7 0 0 0 15.8 6.5 L 11 10.5 L 17 10 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 14.2 15 A 7 7 0 0 0 17 10 L 10.5 11 L 14.2 15 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 7.8 16.5 A 7 7 0 0 0 14.2 15 L 9.5 11 L 7.8 16.5 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 3 10 A 7 7 0 0 0 7.8 16.5 L 9 10 L 3 10 z"/>
+    <path class="ColorScheme-Text" style="fill:currentColor" d="M 4.2 6.5 A 7 7 0 0 0 3 10 L 9 9.5 L 4.2 6.5 z"/>
+  </g>
+</svg>
