@@ -115,7 +115,8 @@ jobs:
           | **YAML Recipes** | $YAML_ICON \`$YAML_STATUS\` | Recipe syntax & schema integrity in \`recipes/\` |
 
           ---
-          ### 💡 Human Context & Next Steps
-          - **All Green?** If all checks above display ✅, this pull request meets all repository code quality, non-destructive safety, and documentation standards.
-          - **Clean Workspace Guarantee:** ASAR binaries, XDG themes, and sandbox scripts conform strictly to rootless execution invariants.
+          ### 💡 Quick Notes & Review Guidelines
+          - **All checks passed?** This pull request is ready for review and merge.
+          - **Safety check:** Recipes and strategy implementations execute rootless and adhere to non-destructive user-level modifications.
+          - *(For automated agents & bots)*: In case of failures, examine individual step outputs in the failed job logs for detailed traces.
           EOF_SUMMARY
