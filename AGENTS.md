@@ -24,6 +24,7 @@ It operates across Linux desktop environments (KDE Plasma, GNOME, XFCE, Cinnamon
 The core execution engine is located in `tray_icons_flat/recipes_engine.py` and supports three modular strategies:
 
 ### A. `icon_theme` (`tray_icons_flat/theme_installer.py`)
+
 - **Use case**: Standard GTK/Qt/DBus StatusNotifierItem applications that resolve tray icons by name from the XDG icon theme lookup mechanism (e.g. `cameractrls`).
 - **Mechanism**:
   - Copies SVGs or multi-resolution PNGs (16x16, 22x22, 24x24, 32x32, 48x48, 64x64, 128x128, 512x512) to user-level icon directories:
@@ -34,6 +35,7 @@ The core execution engine is located in `tray_icons_flat/recipes_engine.py` and 
   - Supports `ColorScheme-Text` (`currentColor`) inside SVG files for dynamic light/dark tray contrast.
 
 ### B. `electron_asar` (`tray_icons_flat/asar_patcher.py`)
+
 - **Use case**: Electron applications that bundle tray icons directly inside `resources/app.asar` (e.g. Antigravity IDE, Discord, Slack) rather than querying the host icon theme.
 - **Mechanism**:
   - Pure Python binary parser and re-packager for Electron's ASAR format.
@@ -46,6 +48,7 @@ The core execution engine is located in `tray_icons_flat/recipes_engine.py` and 
     - Never include the padding length inside `header_size`, otherwise Electron's `archive.cc` parser rejects the trailing null bytes with `Failed to parse header`.
 
 ### C. `bwrap_wrapper` (`tray_icons_flat/bwrap_wrapper.py`)
+
 - **Use case**: Closed-source or proprietary binaries with hardcoded absolute filesystem paths (e.g., hardcoded `/opt/asus-rog/.../icon.png`) that run as regular users without system privileges.
 - **Mechanism**:
   - Uses Bubblewrap (`bwrap`) to bind-mount the entire system root `/` in read-only/read-write mode while overlaying only the target icon file with `--ro-bind <replacement_icon> <hardcoded_path>`.
@@ -96,14 +99,18 @@ User-defined custom recipes can also be placed in `~/.config/tray-icons-flat/rec
 ## 4. Maintenance of `.gitignore` (Toptal gitignore.io)
 
 This repository enforces strict clean workspace standards:
+
 - The base `.gitignore` is generated using Toptal's online API for:
   `python,linux,visualstudiocode,pycharm+all,jetbrains+all`
 - **Regeneration Procedure**:
   Whenever dependencies, IDE targets, or OS scopes expand, run:
+
   ```bash
   curl -sL "https://www.toptal.com/developers/gitignore/api/python,linux,visualstudiocode,pycharm+all,jetbrains+all"
   ```
+
   Keep the automatically generated block at the top, and preserve the bottom section:
+
   ```gitignore
   # ==============================================================================
   # CUSTOM PROJECT RULES (tray-icons-flat)
@@ -123,7 +130,9 @@ This repository enforces strict clean workspace standards:
 ## 5. Running Tests
 
 Run test suite using system Python 3:
+
 ```bash
 python3 -m unittest discover tests
 ```
+
 Ensure all tests pass and no test writes files outside of `tempfile.TemporaryDirectory()`.

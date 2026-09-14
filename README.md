@@ -58,10 +58,13 @@ pip install --user -e .
 ### 3. Usage
 
 #### 🔍 Check which tray icons can be improved
+
 ```bash
 tray-icons-flat scan
 ```
+
 Output:
+
 ```text
 === Linux Tray Icons Scanner ===
 
@@ -73,17 +76,21 @@ Antigravity IDE              antigravity      electron_asar    ✓ Fixed
 ```
 
 #### 🎨 Fix all icons
+
 ```bash
 tray-icons-flat fix --all
 ```
+
 *(Or fix an individual app: `tray-icons-flat fix <app-id>`)*
 
 > 💡 **Note**: Restart running apps to allow them to reload their new tray assets.
 
 #### ↩️ Revert back to original (stock) icons
+
 ```bash
 tray-icons-flat revert --all
 ```
+
 *(Or revert an individual app: `tray-icons-flat revert <app-id>`)*
 
 ---
@@ -146,11 +153,13 @@ tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png --color "#ffffff
 Creating support for new applications is simple and modular:
 
 ### Interactive CLI Assistant
+
 ```bash
 tray-icons-flat add
 ```
 
 ### Or add a YAML file manually
+
 Create a directory under `recipes/<app-id>/` (or in your user config `~/.config/tray-icons-flat/recipes/<app-id>/`) with a `recipe.yaml`:
 
 ```yaml
@@ -173,9 +182,11 @@ Drop your icon asset into `recipes/<app-id>/assets/`, and `tray-icons-flat` will
 ## <a id="contributing"></a>🤝 Contributing
 
 Contributions of recipes, icon assets, and enhancements are very welcome!
+
 - See [AGENTS.md](file:///home/locoxella/repos/tray-icons-flat/AGENTS.md) for technical specifications, ASAR serialization guidelines, and development conventions.
 - Make sure that recipes do not include hardcoded system paths or usernames (always use `~` or standard XDG paths).
 - Run unit tests before submitting:
+
   ```bash
   python3 -m unittest discover tests
   ```
