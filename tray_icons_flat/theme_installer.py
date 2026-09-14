@@ -54,16 +54,38 @@ class ThemeInstaller:
                 subdirectories = [
                     "scalable/apps",
                     "scalable/status",
+                    "16x16/panel",
                     "22x22/panel",
                     "24x24/panel",
-                    "16x16/panel"
+                    "16x16/apps",
+                    "22x22/apps",
+                    "24x24/apps",
+                    "32x32/apps",
+                    "48x48/apps",
+                    "64x64/apps",
+                    "128x128/apps",
+                    "512x512/apps",
+                    "16x16/status",
+                    "22x22/status",
+                    "24x24/status",
+                    "32x32/status",
+                    "48x48/status",
                 ]
             else:
                 subdirectories = [
                     "22x22/panel",
                     "24x24/panel",
+                    "16x16/panel",
                     "22x22/status",
-                    "48x48/apps"
+                    "24x24/status",
+                    "16x16/apps",
+                    "22x22/apps",
+                    "24x24/apps",
+                    "32x32/apps",
+                    "48x48/apps",
+                    "64x64/apps",
+                    "128x128/apps",
+                    "512x512/apps",
                 ]
 
         installed_files = []
@@ -75,6 +97,26 @@ class ThemeInstaller:
             dest_file = os.path.join(dest_dir, target_filename)
             shutil.copy2(source_path, dest_file)
             installed_files.append(dest_file)
+
+        # Also install to user Flatpak exports directory
+        flatpak_export_dir = os.path.expanduser("~/.local/share/flatpak/exports/share/icons/hicolor/scalable/apps")
+        os.makedirs(flatpak_export_dir, exist_ok=True)
+        dest_flatpak = os.path.join(flatpak_export_dir, target_filename)
+        shutil.copy2(source_path, dest_flatpak)
+        installed_files.append(dest_flatpak)
+
+        # Check for sized PNG companion assets in source directory
+        source_dir = os.path.dirname(os.path.abspath(source_path))
+        base_name, _ = os.path.splitext(os.path.basename(source_path))
+        for size in [16, 22, 24, 32, 48, 64, 128, 512]:
+            png_candidate = os.path.join(source_dir, f"{base_name}_{size}x{size}.png")
+            if os.path.exists(png_candidate):
+                for target_subdir in [f"{size}x{size}/apps", f"{size}x{size}/panel", f"{size}x{size}/status"]:
+                    sized_dest_dir = os.path.join(theme_dir, target_subdir)
+                    os.makedirs(sized_dest_dir, exist_ok=True)
+                    sized_dest_file = os.path.join(sized_dest_dir, f"{target_name}.png" if not target_name.endswith(".png") else target_name)
+                    shutil.copy2(png_candidate, sized_dest_file)
+                    installed_files.append(sized_dest_file)
 
         return installed_files
 

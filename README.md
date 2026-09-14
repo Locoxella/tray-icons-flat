@@ -1,42 +1,51 @@
 # tray-icons-flat
 
-Herramienta universal de Linux y servicio para detectar, adaptar y corregir iconos rotos o discordantes en la bandeja del sistema (system tray). 
+<p align="center">
+  <strong>Universal Linux system tray icon fixer, converter, and persistence daemon.</strong>
+</p>
 
-Convierte iconos opacos, con fondos cuadrados o colores saturados en iconos planos, sobrios, con transparencia y formato monocromático/simbólico estándar (compatible con **KDE Plasma**, **GNOME**, **XFCE**, etc.).
-
----
-
-## Características
-
-- 🔍 **Escaneo Inteligente (`scan`)**: Detecta aplicaciones instaladas y reporta si sus iconos de bandeja están en estado original/roto (`Broken/Stock`) o corregidos (`Fixed`).
-- 🎨 **Estrategias Universales**:
-  - **Sobrescritura limpia de temas XDG (`icon_theme`)**: Inyecta iconos vectoriales con soporte de `ColorScheme-Text` (`currentColor`) en `~/.local/share/icons/` (Papirus, Breeze, hicolor) sin alterar archivos de sistema ni requerir `sudo`.
-  - **Parcheador ASAR seguro para Electron (`electron_asar`)**: Permite sustituir recursos de bandeja dentro de paquetes Electron (como Antigravity), preservando siempre un backup prístino (`.stock`).
-- 🖼️ **Conversor de Imágenes Integrado (`convert`)**:
-  - Remoción automática de fondos sólidos (cajas negras o blancas).
-  - Conversión a monocromo sobrio (`#dfdfdf` o configurable) con canal alfa suave.
-  - Preservación selectiva de puntos de acento o notificación (puntos rojos, azules, etc.).
-  - Ajuste automático al tamaño de bandeja (22x22, 24x24 px) con margen y centrado.
-  - Soporte tanto para archivos raster (PNG, JPEG) como vectoriales (SVG).
-- 🔄 **Persistencia ante Actualizaciones (`service`)**:
-  - Servicio systemd de usuario (`systemd --user`) y entrada de autostart para verificar y reaplicar arreglos automáticamente tras actualizaciones de paquetes o al iniciar sesión.
-- 📚 **Biblioteca de Recetas Modular (`recipes/`)**:
-  - Formato declarativo YAML para agregar nuevas aplicaciones fácilmente.
-  - Asistente interactivo `tray-icons-flat add` para crear nuevas recetas en segundos.
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#recipes-library">Recipes</a> •
+  <a href="#built-in-converter">Image Converter</a> •
+  <a href="#persistence-service">Persistence Service</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
 ---
 
-## Aplicaciones Incluidas Inicialmente
+Have you ever switched your Linux desktop to a clean dark or light theme, only to have third-party apps ruin your system tray with ugly, solid-color rectangular backgrounds, saturated neon logos, or unreadable low-contrast icons?
 
-| Aplicación | ID | Tipo / Estrategia | Descripción del Arreglo |
-| :--- | :--- | :--- | :--- |
-| **ASUS ROG Control Center** | `asus-rog` | `icon_theme` | Reemplaza el ojo ROG rojo saturado por un icono plano simbólico vectorial transparente (`asus_notif_*`). |
-| **Camera Controls** | `cameractrls` | `icon_theme` | Reemplaza el cuadrado negro con lente fotográfica por una apertura de cámara limpia y transparente. |
-| **Antigravity IDE** | `antigravity` | `electron_asar` | Parchea `app.asar` para usar el isotipo plano y transparente en vez de la caja blanca con arcoíris. |
+**`tray-icons-flat`** automatically detects, adapts, and fixes inconsistent system tray icons across all major Linux desktop environments (**KDE Plasma**, **GNOME** *(via AppIndicator)*, **XFCE**, **Cinnamon**, **Sway/Waybar**, etc.). It replaces them with elegant, transparent, monochrome/symbolic icons without requiring root access or breaking your system.
 
 ---
 
-## Instalación
+## ✨ Features
+
+- 🔍 **Auto-Scan (`scan`)**: Instantly detects installed apps known to have broken or out-of-place tray icons and tells you whether they are currently in stock or fixed state.
+- ⚡ **One-Click Fix (`fix --all`)**: Applies aesthetic fixes across all detected applications in seconds.
+- ↩️ **Safe & Reversible (`revert`)**: Never destroys your original files. Creates pristine `.stock` backups before touching anything, allowing instant rollbacks.
+- 🛠️ **Non-Invasive Strategies**:
+  - **XDG Icon Theme Overrides (`icon_theme`)**: Standard vector SVGs supporting dynamic system colors (`currentColor` / `ColorScheme-Text`) placed in `~/.local/share/icons/`.
+  - **Safe Electron ASAR Patcher (`electron_asar`)**: In-memory inspection and surgical asset replacement for bundled Electron packages without corrupting package headers.
+  - **Bubblewrap Sandbox Interceptors (`bwrap_wrapper`)**: Overlays hardcoded absolute paths for closed-source binaries without `sudo`.
+- 🔄 **Update-Proof Persistence (`service`)**: Optional lightweight `systemd --user` service that ensures icons stay fixed even after package updates.
+- 🎨 **Built-In Icon Converter (`convert`)**: Removes solid white/black backgrounds, calculates alpha edges, centers graphics, and generates tray-ready 22x22 / 24x24 px monochrome icons from any arbitrary image or logo.
+- 🧩 **Modular Recipe Engine**: Add support for any app with a simple YAML manifest.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Requirements
+
+- Linux (any modern distribution: Fedora, Ubuntu, Debian, Arch, openSUSE, etc.)
+- Python 3.8+
+- System packages: `python3-pillow`, `python3-numpy`, `python3-yaml` (or install via pip)
+
+### 2. Installation
 
 ```bash
 git clone https://github.com/locoxella/tray-icons-flat.git
@@ -44,116 +53,135 @@ cd tray-icons-flat
 pip install --user -e .
 ```
 
-Asegúrate de que `~/.local/bin` esté en tu `$PATH`.
+> **Tip**: Make sure `~/.local/bin` is in your `$PATH` (typically added by default on modern Linux distros).
 
----
+### 3. Usage
 
-## Uso
-
-### 1. Escaneo del Estado de los Iconos
-
+#### 🔍 Check which tray icons can be improved
 ```bash
 tray-icons-flat scan
 ```
+Output:
+```text
+=== Linux Tray Icons Scanner ===
 
-Muestra una tabla con las aplicaciones detectadas y su estado actual.
+Application                  ID               Strategy         Status        
+----------------------------------------------------------------------------
+ASUS ROG Control Center      asus-rog         bwrap_wrapper    ✓ Fixed
+Camera Controls              cameractrls      icon_theme       ✓ Fixed
+Antigravity IDE              antigravity      electron_asar    ✓ Fixed
+```
 
-### 2. Aplicar Arreglos
-
-Corregir todas las aplicaciones detectadas:
+#### 🎨 Fix all icons
 ```bash
 tray-icons-flat fix --all
 ```
+*(Or fix an individual app: `tray-icons-flat fix <app-id>`)*
 
-O corregir una aplicación específica:
-```bash
-tray-icons-flat fix asus-rog
-```
+> 💡 **Note**: Restart running apps to allow them to reload their new tray assets.
 
-> **Nota**: Para ver el cambio en aplicaciones que ya se encuentran en ejecución, reinicia la aplicación correspondiente.
-
-### 3. Revertir al Estado Original (Stock)
-
+#### ↩️ Revert back to original (stock) icons
 ```bash
 tray-icons-flat revert --all
-# o para una app específica:
-tray-icons-flat revert antigravity
+```
+*(Or revert an individual app: `tray-icons-flat revert <app-id>`)*
+
+---
+
+## ⚙️ How It Works
+
+Different Linux applications display tray icons in different ways. `tray-icons-flat` implements the right non-destructive strategy for each:
+
+```mermaid
+flowchart TD
+    Engine["tray-icons-flat<br/>(Core Engine)"]
+
+    Engine -->|AppIndicator / DBus / Qt| Theme["icon_theme Strategy<br/>• Places SVGs / PNGs in ~/.local/share/icons/<br/>• Supports ColorScheme-Text / currentColor<br/>• No root required"]
+    Engine -->|Electron Bundled Assets| Asar["electron_asar Strategy<br/>• Surgical in-place ASAR patching<br/>• Chromium Pickle aligned serialization<br/>• Automatic .stock backups"]
+    Engine -->|Hardcoded Binary Paths| Bwrap["bwrap_wrapper Strategy<br/>• Bubblewrap rootfs overlay<br/>• Intercepts hardcoded /opt paths<br/>• Rootless desktop entry wrapper"]
 ```
 
-### 4. Activar Servicio de Persistencia (Systemd)
+1. **`icon_theme`**: The cleanest approach for standard Linux apps (Qt, GTK, StatusNotifierItem). Places custom SVGs into `~/.local/share/icons/hicolor/` and Papirus/Breeze theme trees. The desktop shell automatically prioritizes user-level icons over `/usr/share/icons/`.
+2. **`electron_asar`**: Many Electron apps bundle their tray graphics inside `resources/app.asar`. We parse the internal archive, extract the target tray image, inject the flat asset, update the header metadata, and maintain a `.stock` original file for safe uninstallation.
+3. **`bwrap_wrapper`**: For closed-source proprietary software with hardcoded `/opt/...` paths, Bubblewrap seamlessly redirects file access to custom assets when launched from the application menu, requiring zero root modifications.
 
-Para que las aplicaciones sigan arregladas aun cuando se actualicen:
+---
+
+## 🔄 Persistence Service (Keep Icons Fixed Across Updates)
+
+When software packages update (via `dnf`, `apt`, `pacman`, Flatpak, or internal app updaters), they may overwrite modified files or reset icons. You can enable the automated user-level systemd service:
 
 ```bash
-# Instalar y activar el servicio de usuario
+# Enable background autostart daemon
 tray-icons-flat service install
 
-# Ver el estado
+# Check service status
 tray-icons-flat service status
 
-# Desinstalar el servicio
+# Uninstall daemon
 tray-icons-flat service uninstall
 ```
 
-### 5. Conversor de Imágenes a Iconos de Bandeja
+---
 
-Convierte cualquier imagen (PNG, SVG, etc.) a un icono plano listo para el tray:
+## 🖼️ Built-In Image Converter
+
+Got an app that isn't supported yet, or want to make your own custom tray icon? Use the built-in converter to transform any PNG or SVG logo into a flat tray icon:
 
 ```bash
-# Conversión básica a 22x22 con fondo transparente y monocromo
-tray-icons-flat convert /ruta/a/icono.png -o /tmp/icono_plano.png
+# Basic conversion (auto-crops, removes solid backgrounds, centers at 22x22, makes monochrome):
+tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png
 
-# Mantener puntos de alerta/notificación (ej. badge rojo)
-tray-icons-flat convert /ruta/a/icono.png -o /tmp/icono_plano.png --padding 2
+# Keep colored notification/alert badges (e.g. preserves red warning dots):
+tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png --padding 2
 
-# Ajustar color frontal (por ejemplo blanco puro)
-tray-icons-flat convert /ruta/a/icono.png -o /tmp/icono_plano.png --color "#ffffff"
+# Custom tint color:
+tray-icons-flat convert /path/to/logo.png -o /tmp/flat_tray.png --color "#ffffff"
 ```
 
-### 6. Agregar una Nueva Aplicación a la Biblioteca
+---
 
-Usa el asistente interactivo:
+## 🧩 Adding New Recipes
+
+Creating support for new applications is simple and modular:
+
+### Interactive CLI Assistant
 ```bash
 tray-icons-flat add
 ```
-O crea manualmente una carpeta en `recipes/<nombre-app>/` o en `~/.config/tray-icons-flat/recipes/<nombre-app>/` con un archivo `recipe.yaml` y sus assets.
 
----
-
-## Estructura de una Receta (`recipe.yaml`)
-
-### Para aplicaciones basadas en Temas de Iconos (XDG / DBus StatusNotifierItem)
+### Or add a YAML file manually
+Create a directory under `recipes/<app-id>/` (or in your user config `~/.config/tray-icons-flat/recipes/<app-id>/`) with a `recipe.yaml`:
 
 ```yaml
-id: mi-app
-name: Mi Aplicación
-description: Arreglo de icono para Mi Aplicación
+id: myapp
+name: My Cool App
+description: Flat monochrome tray icon for My Cool App
 strategy: icon_theme
 detector:
-  binary: mi-app-bin
-  desktop: mi-app.desktop
-  # o para Flatpak:
-  # flatpak_id: com.ejemplo.MiApp
+  binary: myapp
+  desktop: myapp.desktop
 icons:
-  - name: mi-app-tray
-    source: assets/mi-app-tray.svg
+  - name: myapp-tray
+    source: assets/myapp-tray.svg
 ```
 
-### Para aplicaciones Electron con paquete ASAR
-
-```yaml
-id: app-electron
-name: Aplicación Electron
-strategy: electron_asar
-detector:
-  path: ~/apps/MiApp/resources/app.asar
-asar_path: ~/apps/MiApp/resources/app.asar
-replacements:
-  icon.png: assets/icon_flat.png
-```
+Drop your icon asset into `recipes/<app-id>/assets/`, and `tray-icons-flat` will immediately recognize it!
 
 ---
 
-## Licencia
+## 🤝 Contributing
 
-MIT License.
+Contributions of recipes, icon assets, and enhancements are very welcome!
+- See [AGENTS.md](file:///home/locoxella/repos/tray-icons-flat/AGENTS.md) for technical specifications, ASAR serialization guidelines, and development conventions.
+- Make sure that recipes do not include hardcoded system paths or usernames (always use `~` or standard XDG paths).
+- Run unit tests before submitting:
+  ```bash
+  python3 -m unittest discover tests
+  ```
+
+---
+
+## 📄 License
+
+MIT License. Feel free to use, modify, and share!

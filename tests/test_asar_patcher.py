@@ -31,13 +31,12 @@ class TestAsarPatcher(unittest.TestCase):
         header_json = json.dumps(header, separators=(",", ":")).encode("utf-8")
         header_len = len(header_json)
         padding = (4 - (header_len % 4)) % 4
-        if padding:
-            header_json += b"\0" * padding
-            header_len += padding
+        padded_header = header_json + (b"\0" * padding)
+        pickled_size = len(padded_header)
 
         with open(self.asar_path, "wb") as f:
-            f.write(struct.pack("<IIII", 4, header_len + 8, header_len + 4, header_len))
-            f.write(header_json)
+            f.write(struct.pack("<IIII", 4, pickled_size + 8, pickled_size + 4, header_len))
+            f.write(padded_header)
             f.write(file1_data)
             f.write(file2_data)
 

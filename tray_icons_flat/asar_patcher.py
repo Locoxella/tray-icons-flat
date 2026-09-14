@@ -28,9 +28,10 @@ class AsarPatcher:
             if magic != 4:
                 raise ValueError(f"Invalid ASAR magic number: {magic} (expected 4)")
             
-            raw_json = f.read(header_size).decode("utf-8").rstrip("\x00")
+            raw_json = f.read(header_size).decode("utf-8")
             header = json.loads(raw_json)
-            base_offset = 16 + header_size
+            padding = (4 - (header_size % 4)) % 4
+            base_offset = 16 + header_size + padding
             return header, base_offset
 
     @classmethod
@@ -160,16 +161,15 @@ class AsarPatcher:
 
         # ASAR header alignment (padded to 4 bytes if needed)
         padding = (4 - (header_len % 4)) % 4
-        if padding > 0:
-            new_header_json += b"\0" * padding
-            header_len += padding
+        padded_header = new_header_json + (b"\0" * padding)
+        pickled_size = len(padded_header)
 
         temp_asar_path = asar_path + ".tmp"
         with open(temp_asar_path, "wb") as out:
-            # Write 16-byte ASAR header
-            # magic=4, total_size=header_len+8, size=header_len+4, header_size=header_len
-            out.write(struct.pack("<IIII", 4, header_len + 8, header_len + 4, header_len))
-            out.write(new_header_json)
+            # Write 16-byte ASAR header (Pickle serialized header size and string)
+            # magic=4, total_size=pickled_size+8, size=pickled_size+4, header_size=header_len
+            out.write(struct.pack("<IIII", 4, pickled_size + 8, pickled_size + 4, header_len))
+            out.write(padded_header)
             for chunk in new_payloads:
                 out.write(chunk)
 
