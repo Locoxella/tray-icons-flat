@@ -22,6 +22,20 @@ Have you ever switched your Linux desktop to a clean dark or light theme, only t
 
 ---
 
+## 🌅 A Brand New Day, An Aligned Design
+
+| **Before (`11:59 PM`)** — Inconsistent colors, opaque backgrounds & low contrast |
+| :--- |
+| ![Before tray-icons-flat](docs/images/tray-before.png) |
+
+| **After (`12:01 AM`)** — Flat, transparent, symbolic & seamlessly integrated |
+| :--- |
+| ![After tray-icons-flat](docs/images/tray-after.png) |
+
+*Notice how Antigravity IDE (waveform), Camera Controls (aperture), and ASUS ROG (monochrome shield) now seamlessly blend with system indicators.*
+
+---
+
 ## <a id="features"></a>✨ Features
 
 - 🔍 **Auto-Scan (`scan`)**: Instantly detects installed apps known to have broken or out-of-place tray icons and tells you whether they are currently in stock or fixed state.
