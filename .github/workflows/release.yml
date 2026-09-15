@@ -78,7 +78,7 @@ jobs:
         run: twine check dist/*
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pypi-dist-${{ steps.version.outputs.semver }}
           path: dist/*
@@ -93,7 +93,7 @@ jobs:
       url: https://pypi.org/p/tray-icons-flat
     steps:
       - name: Download Built Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: pypi-dist-${{ needs.build-and-verify.outputs.semver }}
           path: dist/
@@ -104,7 +104,7 @@ jobs:
           packages-dir: dist/
 
       - name: Create or Update GitHub Release & Tag
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Release v${{ needs.build-and-verify.outputs.semver }}
           tag_name: v${{ needs.build-and-verify.outputs.semver }}
