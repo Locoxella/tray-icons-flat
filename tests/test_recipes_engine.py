@@ -9,6 +9,7 @@ class TestRecipeEngine(unittest.TestCase):
         self.assertIn("asus-rog", engine.recipes)
         self.assertIn("cameractrls", engine.recipes)
         self.assertIn("antigravity", engine.recipes)
+        self.assertIn("zoom", engine.recipes)
 
     def test_scan_returns_results(self):
         engine = RecipeEngine()
@@ -17,6 +18,7 @@ class TestRecipeEngine(unittest.TestCase):
         self.assertIn("asus-rog", ids)
         self.assertIn("cameractrls", ids)
         self.assertIn("antigravity", ids)
+        self.assertIn("zoom", ids)
 
 
 if __name__ == "__main__":

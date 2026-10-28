@@ -1,0 +1,12 @@
+id: zoom
+name: Zoom Workplace
+description: Replaces the opaque blue round tray icon with a clean flat transparent monochrome Zoom icon.
+strategy: flatpak_binary_patch
+detector:
+  flatpak_id: us.zoom.Zoom
+flatpak_id: us.zoom.Zoom
+target_binary_rel: files/extra/zoom/zoom
+target_pattern: ":/images/ZoomTrayLogo.svg"
+replacement_svg: assets/zoom_tray_flat.svg
+replacement_offset: 24395784
+replacement_size: 2048
