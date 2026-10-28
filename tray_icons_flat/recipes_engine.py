@@ -105,6 +105,13 @@ class Recipe:
                 return AppStatus.FIXED
             return AppStatus.BROKEN
 
+        elif self.strategy == "flatpak_binary_patch":
+            patched_bin = os.path.expanduser(f"~/.local/share/tray-icons-flat/patched_bins/{self.config.get('flatpak_id', self.id)}/{os.path.basename(self.config.get('target_binary_rel', 'zoom'))}")
+            desktop_file = os.path.expanduser(f"~/.local/share/applications/{self.config.get('flatpak_id', self.id)}.desktop")
+            if os.path.exists(patched_bin) and os.path.exists(desktop_file):
+                return AppStatus.FIXED
+            return AppStatus.BROKEN
+
         return AppStatus.BROKEN
 
     def apply(self, state_data: Dict[str, Any]) -> bool:
@@ -207,6 +214,105 @@ Terminal=false
                     app_state["status"] = AppStatus.FIXED.value
                     return True
 
+        elif self.strategy == "flatpak_binary_patch":
+            flatpak_id = self.config.get("flatpak_id", self.id)
+            target_rel = self.config.get("target_binary_rel", "")
+            repl_svg_rel = self.config.get("replacement_svg", "")
+            repl_svg_path = self.resolve_path(repl_svg_rel)
+            repl_size = int(self.config.get("replacement_size", 2048))
+
+            # Find base binary in flatpak installation
+            base_bin = None
+            search_roots = [
+                f"/var/lib/flatpak/app/{flatpak_id}/x86_64/stable/active",
+                os.path.expanduser(f"~/.local/share/flatpak/app/{flatpak_id}/x86_64/stable/active")
+            ]
+            for root in search_roots:
+                candidate = os.path.join(root, target_rel)
+                if os.path.exists(candidate):
+                    base_bin = candidate
+                    break
+
+            if not base_bin or not os.path.exists(repl_svg_path):
+                return False
+
+            with open(base_bin, "rb") as f:
+                orig_data = f.read()
+
+            with open(repl_svg_path, "rb") as f:
+                svg_data = f.read()
+
+            if len(svg_data) > repl_size:
+                return False
+
+            padded_svg = svg_data + b" " * (repl_size - len(svg_data))
+            repl_offset = self.config.get("replacement_offset")
+            if repl_offset is not None:
+                offset = int(repl_offset)
+            else:
+                pattern = self.config.get("target_pattern", "").encode("utf-8")
+                offset = orig_data.find(pattern)
+                if offset == -1:
+                    return False
+
+            patched_data = orig_data[:offset] + padded_svg + orig_data[offset + repl_size:]
+            dest_dir = os.path.expanduser(f"~/.local/share/tray-icons-flat/patched_bins/{flatpak_id}")
+            os.makedirs(dest_dir, exist_ok=True)
+            patched_bin = os.path.join(dest_dir, os.path.basename(target_rel))
+
+            with open(patched_bin, "wb") as f:
+                f.write(patched_data)
+            os.chmod(patched_bin, 0o755)
+
+            # Generate user desktop override
+            user_desktop_dir = os.path.expanduser("~/.local/share/applications")
+            os.makedirs(user_desktop_dir, exist_ok=True)
+            desktop_path = os.path.join(user_desktop_dir, f"{flatpak_id}.desktop")
+
+            # Look for stock desktop file to preserve metadata
+            stock_desktop = None
+            for root in search_roots:
+                c1 = os.path.join(root, "export/share/applications", f"{flatpak_id}.desktop")
+                c2 = os.path.join(root, "files/share/applications", f"{flatpak_id}.desktop")
+                if os.path.exists(c1):
+                    stock_desktop = c1
+                    break
+                elif os.path.exists(c2):
+                    stock_desktop = c2
+                    break
+
+            exec_override = (
+                f"flatpak run --filesystem={patched_bin}:ro --command=sh {flatpak_id} -c '"
+                f"rm -f $HOME/.zoom/data/cefcache/*/SingletonSocket; exec {patched_bin} \"$@\"' sh %U"
+            )
+
+            if stock_desktop and os.path.exists(stock_desktop):
+                with open(stock_desktop, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+                new_lines = []
+                for line in lines:
+                    if line.startswith("Exec="):
+                        new_lines.append(f"Exec={exec_override}\n")
+                    else:
+                        new_lines.append(line)
+                with open(desktop_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+            else:
+                with open(desktop_path, "w", encoding="utf-8") as f:
+                    f.write(f"""[Desktop Entry]
+Type=Application
+Name={self.name}
+Exec={exec_override}
+Icon={flatpak_id}
+Comment={self.description}
+Terminal=false
+""")
+
+            app_state["patched_bin"] = patched_bin
+            app_state["desktop_path"] = desktop_path
+            app_state["status"] = AppStatus.FIXED.value
+            return True
+
         return False
 
     def revert(self, state_data: Dict[str, Any]) -> bool:
@@ -250,6 +356,24 @@ Terminal=false
             asar_path = self.resolve_path(self.config.get("asar_path", ""))
             if os.path.exists(asar_path):
                 AsarPatcher.restore(asar_path)
+            app_state["status"] = AppStatus.BROKEN.value
+            return True
+
+        elif self.strategy == "flatpak_binary_patch":
+            flatpak_id = self.config.get("flatpak_id", self.id)
+            target_rel = self.config.get("target_binary_rel", "zoom")
+            patched_bin = app_state.get("patched_bin") or os.path.expanduser(f"~/.local/share/tray-icons-flat/patched_bins/{flatpak_id}/{os.path.basename(target_rel)}")
+            desktop_path = app_state.get("desktop_path") or os.path.expanduser(f"~/.local/share/applications/{flatpak_id}.desktop")
+            if patched_bin and os.path.exists(patched_bin):
+                try:
+                    os.remove(patched_bin)
+                except OSError:
+                    pass
+            if desktop_path and os.path.exists(desktop_path):
+                try:
+                    os.remove(desktop_path)
+                except OSError:
+                    pass
             app_state["status"] = AppStatus.BROKEN.value
             return True
 
