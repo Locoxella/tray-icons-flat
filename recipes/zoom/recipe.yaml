@@ -7,6 +7,7 @@ detector:
 flatpak_id: us.zoom.Zoom
 target_binary_rel: files/extra/zoom/zoom
 target_pattern: ":/images/ZoomTrayLogo.svg"
+pre_exec: "rm -f $HOME/.zoom/data/cefcache/*/SingletonSocket"
 replacement_svg: assets/zoom_tray_flat.svg
 replacement_offset: 24395784
 replacement_size: 2048

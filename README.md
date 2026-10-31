@@ -75,6 +75,9 @@ pip install --user -e .
 
 ```bash
 tray-icons-flat scan
+
+# Or output machine-readable JSON for scripts and status bars (Waybar, Polybar):
+tray-icons-flat scan --json
 ```
 
 Output:
@@ -93,6 +96,9 @@ Antigravity IDE              antigravity      electron_asar    ✓ Fixed
 
 ```bash
 tray-icons-flat fix --all
+
+# Preview changes without modifying files:
+tray-icons-flat fix --all --dry-run
 ```
 
 *(Or fix an individual app: `tray-icons-flat fix <app-id>`)*
