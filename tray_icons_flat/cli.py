@@ -45,7 +45,11 @@ def print_status(scan_results):
 def cmd_scan(args):
     engine = RecipeEngine()
     results = engine.scan()
-    print_status(results)
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(results, indent=2))
+    else:
+        print_status(results)
 
 
 def cmd_fix(args):
@@ -56,12 +60,17 @@ def cmd_fix(args):
         print(f"{Color.RED}Error: specify an app ID or pass --all{Color.RESET}")
         sys.exit(1)
 
-    print(f"\n{Color.CYAN}Applying flat tray icon fixes...{Color.RESET}\n")
-    results = engine.fix(app_id)
+    dry_run = getattr(args, "dry_run", False)
+    prefix = "[Dry Run] " if dry_run else ""
+    print(f"\n{Color.CYAN}{prefix}Applying flat tray icon fixes...{Color.RESET}\n")
+    results = engine.fix(app_id, dry_run=dry_run)
     for a_id, ok, msg in results:
         symbol = f"{Color.GREEN}✓{Color.RESET}" if ok else f"{Color.RED}✗{Color.RESET}"
         print(f"  [{symbol}] {a_id:<16} : {msg}")
-    print("\n" + Color.GREEN + "Done! Icons refreshed. (Note: Running applications may need to be restarted to reload the new icon)." + Color.RESET + "\n")
+    if dry_run:
+        print("\n" + Color.YELLOW + "Dry run complete. No modifications were made." + Color.RESET + "\n")
+    else:
+        print("\n" + Color.GREEN + "Done! Icons refreshed. (Note: Running applications may need to be restarted to reload the new icon)." + Color.RESET + "\n")
 
 
 def cmd_revert(args):
@@ -72,12 +81,17 @@ def cmd_revert(args):
         print(f"{Color.RED}Error: specify an app ID or pass --all{Color.RESET}")
         sys.exit(1)
 
-    print(f"\n{Color.CYAN}Reverting tray icon fixes to stock...{Color.RESET}\n")
-    results = engine.revert(app_id)
+    dry_run = getattr(args, "dry_run", False)
+    prefix = "[Dry Run] " if dry_run else ""
+    print(f"\n{Color.CYAN}{prefix}Reverting tray icon fixes to stock...{Color.RESET}\n")
+    results = engine.revert(app_id, dry_run=dry_run)
     for a_id, ok, msg in results:
         symbol = f"{Color.GREEN}✓{Color.RESET}" if ok else f"{Color.RED}✗{Color.RESET}"
         print(f"  [{symbol}] {a_id:<16} : {msg}")
-    print("\n" + Color.YELLOW + "Reverted to stock icons." + Color.RESET + "\n")
+    if dry_run:
+        print("\n" + Color.YELLOW + "Dry run complete. No modifications were made." + Color.RESET + "\n")
+    else:
+        print("\n" + Color.YELLOW + "Reverted to stock icons." + Color.RESET + "\n")
 
 
 def cmd_convert(args):
@@ -112,8 +126,14 @@ def cmd_add(args):
     print("\nStrategy:")
     print(" 1) icon_theme (status notifier item or standard XDG icon)")
     print(" 2) electron_asar (Electron application asar package)")
+    print(" 3) bwrap_wrapper (Bubblewrap sandbox path override)")
     choice = input("Select strategy [1]: ").strip() or "1"
-    strategy = "electron_asar" if choice == "2" else "icon_theme"
+    if choice == "2":
+        strategy = "electron_asar"
+    elif choice == "3":
+        strategy = "bwrap_wrapper"
+    else:
+        strategy = "icon_theme"
 
     recipe_dir = os.path.join(os.path.expanduser("~/.config/tray-icons-flat/recipes"), app_id)
     os.makedirs(os.path.join(recipe_dir, "assets"), exist_ok=True)
@@ -139,12 +159,27 @@ def cmd_add(args):
             "name": icon_name,
             "source": f"assets/{icon_name}.svg"
         }]
-    else:
+    elif strategy == "electron_asar":
         asar_path = input("Path to app.asar (e.g. ~/apps/MyApp/resources/app.asar): ").strip()
         config["detector"]["path"] = asar_path
         config["asar_path"] = asar_path
         config["replacements"] = {
             "icon.png": "assets/icon_flat.png"
+        }
+    else:  # bwrap_wrapper
+        target_bin = input("Target executable path (e.g. /usr/bin/myapp): ").strip()
+        desktop_entry = input("Desktop file name (e.g. myapp.desktop): ").strip()
+        target_icon = input("Target icon path to override (e.g. /usr/share/myapp/tray.png): ").strip()
+        bin_name = os.path.basename(target_bin) if target_bin else app_id
+
+        config["target_binary"] = target_bin
+        config["wrapper_bin"] = f"~/.local/bin/{bin_name}"
+        config["desktop_icon"] = app_id
+        if desktop_entry:
+            config["desktop_files"] = [f"~/.local/share/applications/{desktop_entry}"]
+        config["detector"]["binary"] = bin_name
+        config["binds"] = {
+            target_icon: "assets/tray_flat.png"
         }
 
     import yaml
@@ -185,22 +220,37 @@ def main():
         prog="tray-icons-flat",
         description="Universal Linux tool to detect, adapt, and fix broken system tray icons."
     )
+    try:
+        from importlib.metadata import version as get_version
+        pkg_version = get_version("tray-icons-flat")
+    except Exception:
+        from . import __version__ as pkg_version
+
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {pkg_version}"
+    )
+
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # scan
     sub_scan = subparsers.add_parser("scan", help="Scan system for installed apps and report tray icon status")
+    sub_scan.add_argument("--json", action="store_true", help="Output results in JSON format")
     sub_scan.set_defaults(func=cmd_scan)
 
     # fix
     sub_fix = subparsers.add_parser("fix", help="Apply flat tray icon fixes")
     sub_fix.add_argument("app_id", nargs="?", help="Specific application ID to fix")
     sub_fix.add_argument("--all", action="store_true", help="Fix all detected broken applications")
+    sub_fix.add_argument("--dry-run", action="store_true", help="Simulate fixes without modifying filesystem or processes")
     sub_fix.set_defaults(func=cmd_fix)
 
     # revert
     sub_rev = subparsers.add_parser("revert", help="Revert applications to their stock tray icons")
     sub_rev.add_argument("app_id", nargs="?", help="Specific application ID to revert")
     sub_rev.add_argument("--all", action="store_true", help="Revert all applications to stock")
+    sub_rev.add_argument("--dry-run", action="store_true", help="Simulate reverts without modifying filesystem or processes")
     sub_rev.set_defaults(func=cmd_revert)
 
     # convert

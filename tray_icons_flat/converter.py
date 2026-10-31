@@ -89,30 +89,32 @@ class IconConverter:
         # Luminance
         lum = 0.299 * r + 0.587 * g + 0.114 * b
 
-        out = np.zeros_like(arr, dtype=np.uint8)
-
+        out = np.zeros((h, w, 4), dtype=np.uint8)
         fg_r, fg_g, fg_b = foreground_color
 
-        for y in range(h):
-            for x in range(w):
-                alpha = a[y, x]
-                if alpha <= 5:
-                    out[y, x] = [0, 0, 0, 0]
-                    continue
+        transparent = a <= 5
+        if preserve_accents:
+            is_accent = (~transparent) & (sat >= accent_saturation_threshold) & (lum > 30)
+        else:
+            is_accent = np.zeros((h, w), dtype=bool)
 
-                is_accent = preserve_accents and (sat[y, x] >= accent_saturation_threshold) and (lum[y, x] > 30)
+        is_mono = (~transparent) & (~is_accent)
 
-                if is_accent:
-                    # Keep original color with slight enhancement
-                    out[y, x] = [int(r[y, x]), int(g[y, x]), int(b[y, x]), int(alpha)]
-                else:
-                    # Apply monochrome foreground
-                    # Scale brightness by luminance if contrast boost is on
-                    factor = min(1.0, (lum[y, x] / 255.0) * 1.2) if contrast_boost else 1.0
-                    pix_r = int(fg_r * factor)
-                    pix_g = int(fg_g * factor)
-                    pix_b = int(fg_b * factor)
-                    out[y, x] = [pix_r, pix_g, pix_b, int(alpha)]
+        out[is_accent, 0] = r[is_accent].astype(np.uint8)
+        out[is_accent, 1] = g[is_accent].astype(np.uint8)
+        out[is_accent, 2] = b[is_accent].astype(np.uint8)
+        out[is_accent, 3] = a[is_accent].astype(np.uint8)
+
+        if contrast_boost:
+            factor = np.minimum(1.0, (lum / 255.0) * 1.2)
+            factor_mono = factor[is_mono]
+        else:
+            factor_mono = 1.0
+
+        out[is_mono, 0] = (fg_r * factor_mono).astype(np.uint8)
+        out[is_mono, 1] = (fg_g * factor_mono).astype(np.uint8)
+        out[is_mono, 2] = (fg_b * factor_mono).astype(np.uint8)
+        out[is_mono, 3] = a[is_mono].astype(np.uint8)
 
         return Image.fromarray(out, mode="RGBA")
 

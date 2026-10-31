@@ -22,6 +22,14 @@ class TestPackagingAndRecipes(unittest.TestCase):
                 for target, src_rel in recipe.config.get("replacements", {}).items():
                     src = recipe.resolve_path(src_rel)
                     self.assertTrue(os.path.exists(src), f"Missing replacement asset {src} in recipe {recipe_id}")
+            elif recipe.strategy == "bwrap_wrapper":
+                for target, src_rel in recipe.config.get("binds", {}).items():
+                    src = recipe.resolve_path(src_rel)
+                    self.assertTrue(os.path.exists(src), f"Missing bind asset {src} in recipe {recipe_id}")
+            elif recipe.strategy == "flatpak_binary_patch":
+                src_rel = recipe.config.get("replacement_svg", "")
+                src = recipe.resolve_path(src_rel)
+                self.assertTrue(os.path.exists(src), f"Missing replacement svg {src} in recipe {recipe_id}")
 
     def test_manifest_and_metadata(self):
         """Verifies MANIFEST.in and pyproject.toml exist and specify recipes inclusion."""

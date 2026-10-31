@@ -57,6 +57,15 @@ The core execution engine is located in `tray_icons_flat/recipes_engine.py` and 
   - Uses Bubblewrap (`bwrap`) to bind-mount the entire system root `/` in read-only/read-write mode while overlaying only the target icon file with `--ro-bind <replacement_icon> <hardcoded_path>`.
   - Wraps the application launcher in `~/.local/share/applications/` transparently.
 
+### D. `flatpak_binary_patch` (`tray_icons_flat/recipes_engine.py`)
+
+- **Use case**: Sandboxed Flatpak applications with icon assets compiled directly into binary payloads without querying system themes (e.g. `zoom`).
+- **Mechanism**:
+  - Locates the binary within the Flatpak app installation (`/var/lib/flatpak/app/...` or `~/.local/share/flatpak/app/...`).
+  - Surgically patches the embedded vector/SVG payload without modifying surrounding executable offsets.
+  - Places the isolated patched binary in `~/.local/share/tray-icons-flat/patched_bins/<flatpak_id>/`.
+  - Generates a user desktop entry in `~/.local/share/applications/` redirecting execution through `flatpak run --filesystem=<patched_bin>:ro ...` while keeping the stock Flatpak runtime intact.
+
 ---
 
 ## 3. Recipes Format (`recipes/<id>/recipe.yaml`)
@@ -67,7 +76,7 @@ Recipes are modular declarative configurations:
 id: app-identifier
 name: Human Readable App Name
 description: Brief explanation of what this fix does
-strategy: icon_theme | electron_asar | bwrap_wrapper
+strategy: icon_theme | electron_asar | bwrap_wrapper | flatpak_binary_patch
 
 # Detection criteria (any matching triggers detection)
 detector:
@@ -89,10 +98,23 @@ replacements:
   trayTemplate.png: assets/icon_flat.png
 
 # For bwrap_wrapper:
-target_binary: /opt/someapp/bin/someapp
-desktop_file: someapp.desktop
-bind_mounts:
-  /opt/someapp/resources/tray.png: assets/flat_tray.png
+target_binary: /usr/bin/someapp
+wrapper_bin: ~/.local/bin/someapp
+desktop_icon: someapp
+desktop_files:
+  - ~/.config/autostart/someapp.desktop
+  - ~/.local/share/applications/someapp.desktop
+binds:
+  /usr/share/icons/hicolor/512x512/apps/someapp_tray.png: assets/flat_tray.png
+
+# For flatpak_binary_patch:
+flatpak_id: com.vendor.App
+target_binary_rel: files/bin/app
+target_pattern: ":/images/TrayLogo.svg"
+pre_exec: "rm -f $HOME/.app/cache/lock"
+replacement_svg: assets/tray_flat.svg
+replacement_offset: 12345678
+replacement_size: 2048
 ```
 
 User-defined custom recipes can also be placed in `~/.config/tray-icons-flat/recipes/<id>/` without modifying the core repository.

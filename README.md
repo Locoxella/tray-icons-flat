@@ -32,7 +32,7 @@ Have you ever switched your Linux desktop to a clean dark or light theme, only t
 | :--- |
 | ![After tray-icons-flat](docs/images/tray-after.png) |
 
-*Notice how Antigravity IDE (waveform), Camera Controls (aperture), and ASUS ROG (monochrome shield) now seamlessly blend with system indicators.*
+*Notice how Antigravity IDE (waveform), Camera Controls (aperture), ASUS ROG (monochrome shield), and Zoom Workplace now seamlessly blend with system indicators.*
 
 ---
 
@@ -45,6 +45,7 @@ Have you ever switched your Linux desktop to a clean dark or light theme, only t
   - **XDG Icon Theme Overrides (`icon_theme`)**: Standard vector SVGs supporting dynamic system colors (`currentColor` / `ColorScheme-Text`) placed in `~/.local/share/icons/`.
   - **Safe Electron ASAR Patcher (`electron_asar`)**: In-memory inspection and surgical asset replacement for bundled Electron packages without corrupting package headers.
   - **Bubblewrap Sandbox Interceptors (`bwrap_wrapper`)**: Overlays hardcoded absolute paths for closed-source binaries without `sudo`.
+  - **Flatpak Resource Patching (`flatpak_binary_patch`)**: Non-destructive user-space override for Flatpaks with embedded binary icons (e.g. Zoom).
 - 🔄 **Update-Proof Persistence (`service`)**: Optional lightweight `systemd --user` service that ensures icons stay fixed even after package updates.
 - 🎨 **Built-In Icon Converter (`convert`)**: Removes solid white/black backgrounds, calculates alpha edges, centers graphics, and generates tray-ready 22x22 / 24x24 px monochrome icons from any arbitrary image or logo.
 - 🧩 **Modular Recipe Engine**: Add support for any app with a simple YAML manifest.
@@ -75,6 +76,9 @@ pip install --user -e .
 
 ```bash
 tray-icons-flat scan
+
+# Or output machine-readable JSON for scripts and status bars (Waybar, Polybar):
+tray-icons-flat scan --json
 ```
 
 Output:
@@ -87,12 +91,16 @@ Application                  ID               Strategy         Status
 ASUS ROG Control Center      asus-rog         bwrap_wrapper    ✓ Fixed
 Camera Controls              cameractrls      icon_theme       ✓ Fixed
 Antigravity IDE              antigravity      electron_asar    ✓ Fixed
+Zoom Workplace               zoom             flatpak_binary_patch ✓ Fixed
 ```
 
 #### 🎨 Fix all icons
 
 ```bash
 tray-icons-flat fix --all
+
+# Preview changes without modifying files:
+tray-icons-flat fix --all --dry-run
 ```
 
 *(Or fix an individual app: `tray-icons-flat fix <app-id>`)*
@@ -120,11 +128,13 @@ flowchart TD
     Engine -->|AppIndicator / DBus / Qt| Theme["icon_theme Strategy<br/>• Places SVGs / PNGs in ~/.local/share/icons/<br/>• Supports ColorScheme-Text / currentColor<br/>• No root required"]
     Engine -->|Electron Bundled Assets| Asar["electron_asar Strategy<br/>• Surgical in-place ASAR patching<br/>• Chromium Pickle aligned serialization<br/>• Automatic .stock backups"]
     Engine -->|Hardcoded Binary Paths| Bwrap["bwrap_wrapper Strategy<br/>• Bubblewrap rootfs overlay<br/>• Intercepts hardcoded /opt paths<br/>• Rootless desktop entry wrapper"]
+    Engine -->|Flatpak Embedded Assets| Flatpak["flatpak_binary_patch Strategy<br/>• Non-destructive user binary override<br/>• Patches embedded SVG tray graphics<br/>• Clean uninstallation"]
 ```
 
 1. **`icon_theme`**: The cleanest approach for standard Linux apps (Qt, GTK, StatusNotifierItem). Places custom SVGs into `~/.local/share/icons/hicolor/` and Papirus/Breeze theme trees. The desktop shell automatically prioritizes user-level icons over `/usr/share/icons/`.
 2. **`electron_asar`**: Many Electron apps bundle their tray graphics inside `resources/app.asar`. We parse the internal archive, extract the target tray image, inject the flat asset, update the header metadata, and maintain a `.stock` original file for safe uninstallation.
 3. **`bwrap_wrapper`**: For closed-source proprietary software with hardcoded `/opt/...` paths, Bubblewrap seamlessly redirects file access to custom assets when launched from the application menu, requiring zero root modifications.
+4. **`flatpak_binary_patch`**: For sandboxed Flatpaks that embed icon resources directly inside compiled binaries (such as Zoom), we write an isolated patched binary into `~/.local/share/tray-icons-flat/patched_bins/` and generate a user desktop launcher override, leaving system Flatpak runtimes completely untouched.
 
 ---
 
@@ -172,11 +182,12 @@ tray-icons-flat add
 
 Or manually create a `recipes/<app-id>/recipe.yaml` and drop your flat icon into `recipes/<app-id>/assets/`.
 
-Three fixing strategies are supported:
+Four fixing strategies are supported:
 
 - **`icon_theme`**: Standard GTK/Qt/DBus apps querying XDG theme icons (e.g., Camera Controls).
 - **`electron_asar`**: Electron apps bundling icons inside `app.asar` (e.g., Antigravity IDE, Slack, Discord).
 - **`bwrap_wrapper`**: Proprietary binaries with hardcoded system paths using Bubblewrap sandbox redirection without `sudo` (e.g., ASUS ROG).
+- **`flatpak_binary_patch`**: Sandboxed Flatpaks embedding tray SVG assets in compiled binaries without `sudo` (e.g., Zoom).
 
 📖 **For full examples, strategy details, and local testing instructions, see the comprehensive [Recipe Authoring & Contribution Guide](RECIPES.md).**
 
