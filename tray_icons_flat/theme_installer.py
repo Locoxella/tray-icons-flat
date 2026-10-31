@@ -15,6 +15,55 @@ class ThemeInstaller:
     USER_ICONS_BASE = os.path.expanduser("~/.local/share/icons")
 
     @classmethod
+    def detect_desktop_theme(cls) -> Optional[str]:
+        """Detects the current desktop environment's active icon theme."""
+        # 1. KDE Plasma (kdeglobals)
+        kdeglobals = os.path.expanduser("~/.config/kdeglobals")
+        if os.path.exists(kdeglobals):
+            try:
+                import configparser
+                cfg = configparser.ConfigParser()
+                cfg.read(kdeglobals)
+                if "Icons" in cfg and "Theme" in cfg["Icons"]:
+                    theme = cfg["Icons"]["Theme"].strip()
+                    if theme:
+                        return theme
+            except Exception:
+                pass
+
+        # 2. GNOME / Cinnamon / MATE (gsettings)
+        if shutil.which("gsettings"):
+            try:
+                res = subprocess.run(
+                    ["gsettings", "get", "org.gnome.desktop.interface", "icon-theme"],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                theme = res.stdout.strip().strip("'\"")
+                if theme:
+                    return theme
+            except Exception:
+                pass
+
+        # 3. XFCE (xfconf-query)
+        if shutil.which("xfconf-query"):
+            try:
+                res = subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName"],
+                    capture_output=True,
+                    text=True,
+                    check=False
+                )
+                theme = res.stdout.strip()
+                if theme:
+                    return theme
+            except Exception:
+                pass
+
+        return None
+
+    @classmethod
     def get_active_themes(cls) -> List[str]:
         """Detects installed user themes that should receive tray icons."""
         themes = ["hicolor"]
@@ -24,6 +73,12 @@ class ThemeInstaller:
                 if os.path.isdir(entry_path) and entry != "hicolor":
                     # e.g., Papirus, Papirus-Dark, Papirus-Light, ePapirus
                     themes.append(entry)
+
+        # Ensure active desktop theme is included to override system-wide themes
+        desktop_theme = cls.detect_desktop_theme()
+        if desktop_theme and desktop_theme != "hicolor":
+            themes.append(desktop_theme)
+
         return list(dict.fromkeys(themes))
 
     @classmethod
