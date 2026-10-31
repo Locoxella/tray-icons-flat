@@ -11,6 +11,7 @@ This guide walks you through creating custom recipes to fix tray icons for Linux
   - [1. `icon_theme`](#1-icon_theme)
   - [2. `electron_asar`](#2-electron_asar)
   - [3. `bwrap_wrapper`](#3-bwrap_wrapper)
+  - [4. `flatpak_binary_patch`](#4-flatpak_binary_patch)
 - [Step-by-Step: Adding a Recipe](#step-by-step-adding-a-recipe)
 - [Testing & Validating Locally](#testing--validating-locally)
 - [Submitting a Pull Request](#submitting-a-pull-request)
@@ -115,6 +116,31 @@ Alternatively, user-local custom recipes can be placed in `~/.config/tray-icons-
 
 ---
 
+### 4. `flatpak_binary_patch`
+
+- **When to use:** Flatpak applications that bundle compiled SVG/image assets directly within the executable payload (e.g. Qt rcc or hardcoded binary offsets) rather than looking up icon themes or using ASAR.
+- **Example app:** Zoom Workplace (`zoom`).
+- **How it works:** Reads the target application binary, surgically replaces the embedded SVG asset without altering binary layout or lengths, writes the patched binary into `~/.local/share/tray-icons-flat/patched_bins/`, and creates a user desktop override with `--filesystem` redirection.
+- **Example `recipe.yaml`:**
+
+  ```yaml
+  id: zoom
+  name: Zoom Workplace
+  description: Replaces the opaque blue round tray icon with a flat transparent monochrome Zoom icon.
+  strategy: flatpak_binary_patch
+  detector:
+    flatpak_id: us.zoom.Zoom
+  flatpak_id: us.zoom.Zoom
+  target_binary_rel: files/extra/zoom/zoom
+  target_pattern: ":/images/ZoomTrayLogo.svg"
+  pre_exec: "rm -f $HOME/.zoom/data/cefcache/*/SingletonSocket"
+  replacement_svg: assets/zoom_tray_flat.svg
+  replacement_offset: 24395784
+  replacement_size: 2048
+  ```
+
+---
+
 ## <a id="step-by-step-adding-a-recipe"></a>Step-by-Step: Adding a Recipe
 
 ### Option A: Using the Interactive CLI Wizard
@@ -157,9 +183,13 @@ Always test your recipe before opening a Pull Request:
 
    Ensure your application appears in the table with its correct ID and strategy.
 
-2. **Test Fix Application:**
+2. **Test Fix Application (with dry-run preview):**
 
    ```bash
+   # Preview without making any filesystem or process changes
+   python3 -m tray_icons_flat.cli fix <my-app> --dry-run
+
+   # Apply fix
    python3 -m tray_icons_flat.cli fix <my-app>
    ```
 
@@ -168,6 +198,10 @@ Always test your recipe before opening a Pull Request:
 3. **Test Revert:**
 
    ```bash
+   # Preview revert
+   python3 -m tray_icons_flat.cli revert <my-app> --dry-run
+
+   # Perform revert
    python3 -m tray_icons_flat.cli revert <my-app>
    ```
 

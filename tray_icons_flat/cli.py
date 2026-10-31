@@ -126,8 +126,14 @@ def cmd_add(args):
     print("\nStrategy:")
     print(" 1) icon_theme (status notifier item or standard XDG icon)")
     print(" 2) electron_asar (Electron application asar package)")
+    print(" 3) bwrap_wrapper (Bubblewrap sandbox path override)")
     choice = input("Select strategy [1]: ").strip() or "1"
-    strategy = "electron_asar" if choice == "2" else "icon_theme"
+    if choice == "2":
+        strategy = "electron_asar"
+    elif choice == "3":
+        strategy = "bwrap_wrapper"
+    else:
+        strategy = "icon_theme"
 
     recipe_dir = os.path.join(os.path.expanduser("~/.config/tray-icons-flat/recipes"), app_id)
     os.makedirs(os.path.join(recipe_dir, "assets"), exist_ok=True)
@@ -153,12 +159,27 @@ def cmd_add(args):
             "name": icon_name,
             "source": f"assets/{icon_name}.svg"
         }]
-    else:
+    elif strategy == "electron_asar":
         asar_path = input("Path to app.asar (e.g. ~/apps/MyApp/resources/app.asar): ").strip()
         config["detector"]["path"] = asar_path
         config["asar_path"] = asar_path
         config["replacements"] = {
             "icon.png": "assets/icon_flat.png"
+        }
+    else:  # bwrap_wrapper
+        target_bin = input("Target executable path (e.g. /usr/bin/myapp): ").strip()
+        desktop_entry = input("Desktop file name (e.g. myapp.desktop): ").strip()
+        target_icon = input("Target icon path to override (e.g. /usr/share/myapp/tray.png): ").strip()
+        bin_name = os.path.basename(target_bin) if target_bin else app_id
+
+        config["target_binary"] = target_bin
+        config["wrapper_bin"] = f"~/.local/bin/{bin_name}"
+        config["desktop_icon"] = app_id
+        if desktop_entry:
+            config["desktop_files"] = [f"~/.local/share/applications/{desktop_entry}"]
+        config["detector"]["binary"] = bin_name
+        config["binds"] = {
+            target_icon: "assets/tray_flat.png"
         }
 
     import yaml
