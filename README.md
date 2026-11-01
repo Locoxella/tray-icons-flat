@@ -5,6 +5,15 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Locoxella/tray-icons-flat/actions/workflows/ci.yml"><img src="https://github.com/Locoxella/tray-icons-flat/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI &amp; Code Quality"></a>
+  <a href="https://github.com/Locoxella/tray-icons-flat/actions/workflows/release.yml"><img src="https://github.com/Locoxella/tray-icons-flat/actions/workflows/release.yml/badge.svg" alt="Release &amp; Publish"></a>
+  <a href="https://github.com/Locoxella/tray-icons-flat/releases"><img src="https://img.shields.io/github/v/release/Locoxella/tray-icons-flat?color=blue&amp;logo=github" alt="GitHub Release"></a>
+  <a href="https://pypi.org/project/tray-icons-flat/"><img src="https://img.shields.io/pypi/v/tray-icons-flat?color=success&amp;logo=pypi&amp;logoColor=white" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/tray-icons-flat/"><img src="https://img.shields.io/pypi/pyversions/tray-icons-flat?logo=python&amp;logoColor=white" alt="Python Versions"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Locoxella/tray-icons-flat" alt="License"></a>
+</p>
+
+<p align="center">
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#how-it-works">How It Works</a> •
