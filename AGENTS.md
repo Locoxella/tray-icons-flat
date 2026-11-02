@@ -163,7 +163,9 @@ python3 -m unittest discover tests
 Ensure all tests pass and no test writes files outside of `tempfile.TemporaryDirectory()`.
 
 ---
+
 ## Language, Token Optimization & Agent Directives
+
 - **Operating Principle & Token Efficiency**: English is strictly mandatory across all agent operations to preserve token budgets and avoid sub-word tokenization overhead.
 - **Language Boundaries**:
   - **Rules, Skills & Prompts**: Strictly English.
