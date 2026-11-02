@@ -161,3 +161,12 @@ python3 -m unittest discover tests
 ```
 
 Ensure all tests pass and no test writes files outside of `tempfile.TemporaryDirectory()`.
+
+---
+## Language, Token Optimization & Agent Directives
+- **Operating Principle & Token Efficiency**: English is strictly mandatory across all agent operations to preserve token budgets and avoid sub-word tokenization overhead.
+- **Language Boundaries**:
+  - **Rules, Skills & Prompts**: Strictly English.
+  - **Internal Reasoning & Thoughts**: Strictly English (agents must never reason in Spanish).
+  - **Documentation & Commits**: Strictly English (`README.md`, `docs/`, code comments, commit messages).
+  - **User Interactions**: Default to English in chat for maximum conciseness and token economy. Only reply in Spanish if the user explicitly requests Spanish.
