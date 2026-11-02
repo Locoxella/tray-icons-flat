@@ -7,6 +7,7 @@ name = "tray-icons-flat"
 version = "1.0.0"
 description = "Universal Linux tool to detect, adapt, and fix broken system tray icons"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.8"
 dependencies = [
     "Pillow",
